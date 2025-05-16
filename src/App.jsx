@@ -1,20 +1,11 @@
 import { useState, useEffect } from "react";
-import { getAccessToken } from "./authService";
 import "./App.css";
 
 import fetchDLRStacData from "./sentinel5DLRdata";
 import SyncMapTracking from "./Components/SyncMapTracking";
 import Sentinel5Tracking from "./Components/Sentinel5Tracking";
-import FormaldehydeLayer from "./Components/DataSpaceViz/FormaldehydeLayer";
-import SulfurDioxide from "./Components/DataSpaceViz/SulfurDioxideLayer";
-import OzoneLayer from "./Components/DataSpaceViz/OzoneLayer";
-import AerosolIndexLayer from "./Components/DataSpaceViz/AerosolIndexLayer";
-// import NitrogenDioxideLayer from "./Components/DataSpaceViz/NitrogenDioxideLayer";
-// import CarbonMonoxideLayer from "./Components/DataSpaceViz/CarbonMonoxideLayer";
-// import MethanLayer from "./Components/DataSpaceViz/MethanLayer";
 
 function App() {
-  const [token, setToken] = useState(null);
   const [error, setError] = useState(null);
   const [sentinelData, setSentinelData] = useState({
     carbonMonoxideLayer: null,
@@ -39,30 +30,27 @@ function App() {
   });
 
   useEffect(() => {
-    async function fetchToken() {
-      try {
-        const accessToken = await getAccessToken();
-        setToken(accessToken);
-      } catch (error) {
-        setError(error.message);
-        console.error(`Error getting Token:`, error);
-      }
-    }
-    fetchToken();
-  }, []);
-
-  useEffect(() => {
     async function fetchData() {
       try {
         const formaldehydeData = await fetchDLRStacData("Formaldehyde");
         const sulfurDioxideData = await fetchDLRStacData("SulfurDioxide");
+        const aerosolIndexData = await fetchDLRStacData("AerosolIndex");
+        const ozoneData = await fetchDLRStacData("Ozone");
         setSentinelData({
           formaldehyde: formaldehydeData,
           sulfurDioxide: sulfurDioxideData,
+          aerosolIndex: aerosolIndexData,
+          ozone: ozoneData,
         });
-        console.log("Data:", formaldehydeData, sulfurDioxideData);
+        console.log(
+          "Data:",
+          formaldehydeData,
+          sulfurDioxideData,
+          aerosolIndexData,
+          ozoneData
+        );
       } catch (error) {
-        console.error("Error to get sentinel-data:", error);
+        console.error("Error to get Sentinel5 product-data:", error);
         setError(error.message);
       }
     }
@@ -76,14 +64,12 @@ function App() {
 
   return (
     <div>
-      {token && <p>Token erfolgreich abgerufen!</p>}
-      {!token && <p>Fehler:{error}!</p>}
       <section>
-        {/* Only render maps once we have position data */}
         {isPositionLoaded ? (
           <SyncMapTracking
             onLayerReady={handleMapsReady}
             sentinel5Position={sentinel5Position}
+            sentinelData={sentinelData}
           />
         ) : (
           <div className="loading">Loading satellite position...</div>
@@ -92,37 +78,6 @@ function App() {
           setSentinel5Position={handleSetPosition}
           sentinelData={sentinelData}
         />
-        {/*Render Layer only if mapRefs are available*/}
-        {mapRefs && sentinelData && (
-          <>
-            <FormaldehydeLayer
-              data={sentinelData.formaldehyde}
-              mapRefs={mapRefs}
-            />
-            <SulfurDioxide
-              data={sentinelData.sulfurDioxide}
-              mapRefs={mapRefs}
-            />
-            <OzoneLayer data={sentinelData.ozone} mapRefs={mapRefs} />
-            <AerosolIndexLayer
-              data={sentinelData.aerosolIndex}
-              mapRefs={mapRefs}
-            />
-            {/*<CarbonMonoxideLayer
-              data={sentinelData.carbonMonoxide}
-              mapRefs={mapRefs}
-            />*/}
-            {/*<MethanLayer data={sentinelData.methan} mapRefs={mapRefs} />*/}
-            {/*<NitrogenDioxideLayer
-              data={sentinelData.nitrogenDioxide}
-              mapRefs={mapRefs}
-            />*/}
-            {/*<NitrogenDioxideLayer
-              data={sentinelData.nitrogenDioxide}
-              mapRefs={mapRefs}
-            />*/}
-          </>
-        )}
       </section>
     </div>
   );

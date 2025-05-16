@@ -1,3 +1,5 @@
+// At the moment don't need the authService for Copernicus fetching data (Not needed for DLR services)
+/*
 async function getAccessToken() {
   // src/services/authServiice
   const clientId = import.meta.env.VITE_COPERNICUS_CLIENT_ID;
@@ -27,3 +29,4 @@ async function getAccessToken() {
 }
 
 export { getAccessToken };
+*/
