@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, use } from "react";
 import mapboxGl from "mapbox-gl";
 import syncMaps from "@mapbox/mapbox-gl-sync-move";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -37,6 +37,11 @@ export default function SyncMapTracking({
     mapA: null,
     mapC: null,
   });
+
+  // States for click-based reverse geocoding feature
+  const [clickedCoordinates, setClickedCoordinates] = useState(null);
+  const [clickedLocation, setClickedLocation] = useState("");
+  const [geocodingData, setGeocodingData] = useState(null);
 
   const activeLayerA = activeMapLayers.mapA;
   const activeLayerC = activeMapLayers.mapC;
@@ -148,7 +153,7 @@ export default function SyncMapTracking({
     };
   }, []);
 
-  // Dynamic Sentinel-5 data
+  // Sentinel-5 Satellite postion data
   useEffect(() => {
     if (!mapsInitialized || !mapRefB.current || !sentinel5Position) return;
 
@@ -182,7 +187,7 @@ export default function SyncMapTracking({
     }
   }, [sentinel5Position, mapsInitialized]);
 
-  // New effect for rendering map layer data once and save it
+  // Rendering map layer-data once and save it
   useEffect(() => {
     // Sobald einer der folgenden Bedingungen zurifft, wird die funktion sofort beendet
     if (!mapsInitialized || !mapRefA.current || !mapRefB.current) return;
@@ -239,7 +244,7 @@ export default function SyncMapTracking({
     }
   }, [mapsInitialized]); // runs once when map mounted
 
-  // Visibility control for Map A
+  // Visibility control for Map-A
   useEffect(() => {
     if (!mapsInitialized || !mapRefA.current) {
       return;
@@ -272,7 +277,7 @@ export default function SyncMapTracking({
     }
   }, [activeLayerA, mapsInitialized]);
 
-  // Visibility control for Map C
+  // Visibility control for Map-C
   useEffect(() => {
     if (!mapsInitialized || !mapRefC.current) {
       return;
@@ -305,6 +310,61 @@ export default function SyncMapTracking({
     }
   }, [activeLayerC, mapsInitialized]);
 
+  // Cursor-Location information (Reverse geocoding)
+
+  useEffect(() => {
+    if (!mapRefB.current) return;
+    const getCoordinates = (e) => {
+      const coords = e.lngLat;
+      setClickedCoordinates(coords);
+    };
+    mapRefB.current.on("click", getCoordinates);
+
+    // Event Cleanup
+    return () => {
+      if (mapRefB.current) {
+        mapRefB.current.off("click", getCoordinates);
+      }
+    };
+  }, []);
+
+  /*
+  useEffect(() => {
+    if (clickedCoordinates) {
+      console.log("Clicked coordinations:", clickedCoordinates);
+    }
+  }, [clickedCoordinates]);*/
+
+  // try/catch for error handling
+  useEffect(() => {
+    if (!clickedCoordinates) return;
+    {
+      async function getCoordinatesData() {
+        try {
+          const response = await fetch(
+            `https://api.mapbox.com/geocoding/v5/mapbox.places/${clickedCoordinates.lng},${clickedCoordinates.lat}.json?access_token=pk.eyJ1IjoiZGV0cm9pdDMxMyIsImEiOiJjbTRqb3ljbTQwZnJxMmlzaTRtMWRzcnhpIn0.akOKBt52fpXDljrtyHo8wg`
+          );
+          const data = await response.json();
+          setGeocodingData(data);
+          console.log("geocading:", data);
+          if (data.features.length > 0) {
+            console.log("clicked location is:", data.features[0].place_name);
+            const selectedFeature = data.features.find(
+              (item) => item.place_name
+            );
+            setClickedLocation(selectedFeature.place_name);
+          } else {
+            setClickedLocation("Ozean");
+          }
+        } catch (error) {
+          console.error("Error fetching reverse geocoding data:", error);
+          setClickedLocation("Error loading location");
+        }
+      }
+      getCoordinatesData();
+    }
+  }, [clickedCoordinates]);
+
   return (
     <>
       <div
@@ -334,11 +394,25 @@ export default function SyncMapTracking({
           />
         </div>
 
-        <div style={{ flex: 1, height: "100%" }}>
+        <div style={{ flex: 1, position: "relative", height: "100%" }}>
           <div
             ref={mapContainerRefB}
             style={{ width: "100%", height: "100%" }}
           />
+          {clickedLocation && (
+            <div
+              style={{
+                position: "absolute",
+                top: "10px",
+                left: "10px",
+                backgroundColor: "black",
+                padding: "5px",
+                zIndex: 1000,
+              }}
+            >
+              {clickedLocation}
+            </div>
+          )}
         </div>
 
         <div style={{ flex: 1, position: "relative", height: "100%" }}>
