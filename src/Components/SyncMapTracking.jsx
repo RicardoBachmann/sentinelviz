@@ -13,6 +13,7 @@ import AerosolIndexLayer from "../Components/DataSpaceViz/AerosolIndexLayer";
 // import MethanLayer from "../Components/DataSpaceViz/MethanLayer";
 
 import LayerToggle from "./LayerToggle";
+import ControlPanel from "./ControlPanel";
 
 export default function SyncMapTracking({
   sentinel5Position, // Live coordinates
@@ -398,6 +399,10 @@ export default function SyncMapTracking({
           <div
             ref={mapContainerRefB}
             style={{ width: "100%", height: "100%" }}
+          />
+          <ControlPanel
+            sentinel5Position={sentinel5Position}
+            clickedLocation={clickedLocation}
           />
           {clickedLocation && (
             <div
